@@ -4,7 +4,7 @@
  
 ## TODO
 
-- [ ] Fix all bugs
+- [x] Fix all bugs
 
 ## Features:
 - [x] Testing
@@ -14,3 +14,4 @@
 
  # Developer:
  * CLADevs Team - Main Developer.
+ * SuperKali - Developer of CLADevs
