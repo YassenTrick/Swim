@@ -4,30 +4,103 @@ declare(strict_types=1);
 
 namespace Swim;
 
+use pocketmine\block\StillWater;
+use pocketmine\block\Water;
+use pocketmine\entity\Effect;
+use pocketmine\entity\EffectInstance;
+use pocketmine\entity\Entity;
+use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerExhaustEvent;
+use pocketmine\event\player\PlayerMoveEvent;
+use pocketmine\network\mcpe\protocol\PlayerActionPacket;
 use pocketmine\Player;
-use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\plugin\PluginBase;
+use pocketmine\utils\TextFormat as C;
 
-use Swim\packet\SwimmingPacket;
+class Main extends PluginBase implements Listener {
 
-class Main extends PluginBase{
+    public const PREFIX =  C::GREEN . "CLADevs " . C::RESET;
 
-	private static $instance;
+    public const STOP_ACTION = 0;
+
+    public const START_ACTION = 1;
 
 	public function onEnable(): void{
-		self::$instance = $this;
-		PacketPool::registerPacket(new SwimmingPacket());
+	    $this->getServer()->getPluginManager()->registerEvents($this, $this);
+	    $this->getLogger()->info(self::PREFIX . "Enabled");
 	}
+	public function onDisable()
+    {
+        $this->getLogger()->info(self::PREFIX . "Disabled");
+    }
 
-	public static function get(): self{
-		return self::$instance;
-	}
+    /**
+     * @param PlayerMoveEvent $event
+     */
+    public function onMove(PlayerMoveEvent $event): void{
+        $player = $event->getPlayer();
 
-	public function isSwimming(Player $player): bool{
-		return $player->getGenericFlag(Player::DATA_FLAG_SWIMMING);
-	}
+        if($this->inWater($player)){
+            if($player->isSprinting()){
 
-	public function setSwimming(Player $player, bool $value = true): void{
-		$player->setGenericFlag(Player::DATA_FLAG_SWIMMING, $value);
-	}
+                $this->send($player, self::START_ACTION);
+                $player->exhaust(0.015, PlayerExhaustEvent::CAUSE_SWIMMING);
+                $player->addEffect(new EffectInstance(Effect::getEffect(Effect::NIGHT_VISION), 10, 0, false));
+            } else {
+                $this->send($player, self::START_ACTION);
+                $player->exhaust(0.015, PlayerExhaustEvent::CAUSE_SWIMMING);
+                $player->addEffect(new EffectInstance(Effect::getEffect(Effect::NIGHT_VISION), 10, 0, false));
+            }
+        } else {
+            $this->send($player, self::STOP_ACTION);
+            $player->removeEffect(Effect::NIGHT_VISION);
+        }
+    }
+
+    /**
+     * @param Player $player
+     * @param int $action
+     */
+    public function send(Player $player, int $action){
+
+        switch($action){
+
+            case self::STOP_ACTION:
+
+                $pk = new PlayerActionPacket();
+                $pk->entityRuntimeId = Entity::$entityCount++;
+                $pk->x = $player->getFloorX();
+                $pk->y = $player->getFloorY();
+                $pk->z = $player->getFloorZ();
+                $pk->face = $player->getDirection();
+                $pk->action = $pk::ACTION_STOP_SWIMMING;
+
+                $player->setGenericFlag($player::DATA_FLAG_SWIMMING, false);
+                break;
+
+            case self::START_ACTION:
+                $pk = new PlayerActionPacket();
+                $pk->entityRuntimeId = Entity::$entityCount++;
+                $pk->x = $player->getFloorX();
+                $pk->y = $player->getFloorY();
+                $pk->z = $player->getFloorZ();
+                $pk->face = $player->getDirection();
+                $pk->action = $pk::ACTION_START_SWIMMING;
+
+                $player->setGenericFlag($player::DATA_FLAG_SWIMMING, true);
+                break;
+        }
+
+        $this->getServer()->broadcastPacket($this->getServer()->getOnlinePlayers(), $pk);
+
+    }
+
+    /**
+     * @param Player $player
+     * @return bool
+     */
+    public function inWater(Player $player): bool{
+        return $player->getLevel()->getBlockAt($player->getFloorX(), $player->getFloorY() - 1, $player->getFloorZ()) instanceof Water || $player->getLevel()->getBlockAt($player->getFloorX(), $player->getFloorY() - 1, $player->getFloorZ()) instanceof StillWater;
+
+    }
 }
