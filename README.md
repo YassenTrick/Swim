@@ -7,7 +7,7 @@
 - [x] Fix all bugs
 
 ## Features:
-- [x] Testing
+- [x] Tested
 
  ## Need Help?
   Open an Issue [here](https://github.com/CLADevs/Swim/issues/new).
