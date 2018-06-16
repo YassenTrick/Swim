@@ -65,7 +65,7 @@ class Main extends PluginBase implements Listener{
 				$pk->face = $player->getDirection();
 				$pk->action = $pk::ACTION_STOP_SWIMMING;
 				$player->setGenericFlag($player::DATA_FLAG_SWIMMING, false);
-				return;
+				break;
 			case self::START_ACTION:
 				$pk = new PlayerActionPacket();
 				$pk->entityRuntimeId = Entity::$entityCount++;
@@ -75,7 +75,7 @@ class Main extends PluginBase implements Listener{
 				$pk->face = $player->getDirection();
 				$pk->action = $pk::ACTION_START_SWIMMING;
 				$player->setGenericFlag($player::DATA_FLAG_SWIMMING, true);
-				return;
+				break;
 		}
 		$this->getServer()->broadcastPacket($this->getServer()->getOnlinePlayers(), $pk);
 	}
